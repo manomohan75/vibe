@@ -47,7 +47,7 @@ export default function App() {
           </label>
 
           <label className="field">
-            <span className="field__label">Emp Name</span>
+            <span className="field__label">Emp #</span>
             <input
               type="text"
               name="name"
@@ -78,7 +78,7 @@ export default function App() {
                 <dd>{submitted.number}</dd>
               </div>
               <div className="summary__row">
-                <dt>Emp Name</dt>
+                <dt>Emp #</dt>
                 <dd>{submitted.name}</dd>
               </div>
             </dl>
