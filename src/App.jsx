@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 const initialForm = {
-  id: '',
+  number: '',
   name: ''
 };
 
@@ -29,16 +29,16 @@ export default function App() {
       <main className="card">
         <header className="card__header">
           <h1>Employee Details</h1>
-          <p className="muted">Enter an employee ID and name to preview the saved record.</p>
+          <p className="muted">Enter an employee number and name to preview the saved record.</p>
         </header>
 
         <form className="form" onSubmit={handleSubmit}>
           <label className="field">
-            <span className="field__label">Employee ID</span>
+            <span className="field__label">Employee Number</span>
             <input
               type="text"
-              name="id"
-              value={employee.id}
+              name="number"
+              value={employee.number}
               onChange={handleChange}
               placeholder="e.g. EMP-001"
               required
@@ -74,8 +74,8 @@ export default function App() {
           {submitted ? (
             <dl>
               <div className="summary__row">
-                <dt>ID</dt>
-                <dd>{submitted.id}</dd>
+                <dt>Employee Number</dt>
+                <dd>{submitted.number}</dd>
               </div>
               <div className="summary__row">
                 <dt>Name</dt>
