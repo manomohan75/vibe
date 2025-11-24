@@ -1,7 +1,7 @@
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color: #0f172a;
-  background-color: #e2e8f0;
+  background-color: #b3d4ff;
   line-height: 1.6;
 }
 
@@ -15,7 +15,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 25% 25%, #e2e8f0, #cbd5e1 40%, #e2e8f0 70%);
+  background: #b3d4ff;
 }
 
 .page {
