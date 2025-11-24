@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 
+const clientOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const isLocalDevHost = /localhost:(5173|4173)|127\.0\.0\.1:(5173|4173)/i.test(clientOrigin);
 const API_BASE =
   (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.replace(/\/$/, '')) ||
-  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000');
+  (isLocalDevHost ? 'http://localhost:4000' : clientOrigin || 'http://localhost:4000');
 
 const initialForm = {
   number: '',
