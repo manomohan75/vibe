@@ -103,15 +103,46 @@ const ensureDatabaseReady = () => {
 
 const app = express();
 
-app.use(
-  cors({
+const buildCorsOptions = (req) => {
+  const allowed = new Set(allowedOrigins);
+  const originHeader = req.headers?.origin ? normalizeOrigin(req.headers.origin) : null;
+  const hostHeader = req.headers?.host ? req.headers.host.trim() : null;
+
+  if (hostHeader) {
+    // Always allow the same host (covers custom domains and Vercel preview URLs).
+    allowed.add(normalizeOrigin(`https://${hostHeader}`));
+    allowed.add(normalizeOrigin(`http://${hostHeader}`));
+  }
+
+  // Permit any vercel.app preview/production origin automatically when deployed on Vercel.
+  const vercelHostAllowed =
+    originHeader &&
+    (() => {
+      try {
+        return new URL(originHeader).hostname.endsWith('.vercel.app');
+      } catch (_err) {
+        return false;
+      }
+    })();
+  if (vercelHostAllowed) {
+    allowed.add(originHeader);
+  }
+
+  return {
     origin: (origin, callback) => {
       const normalizedOrigin = origin ? normalizeOrigin(origin) : origin;
-      const allow = !origin || allowedOrigins.includes(normalizedOrigin);
+      const allow = !origin || allowed.has(normalizedOrigin);
+
+      if (!allow) {
+        console.warn('Blocked CORS origin', { origin: normalizedOrigin, allowed: Array.from(allowed) });
+      }
+
       callback(allow ? null : new Error('Origin not allowed by CORS'), allow ? true : undefined);
     }
-  })
-);
+  };
+};
+
+app.use((req, res, next) => cors(buildCorsOptions(req))(req, res, next));
 app.use(express.json());
 
 app.get('/health', async (_req, res) => {
