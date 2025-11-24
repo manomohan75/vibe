@@ -11,6 +11,25 @@ const initialForm = {
   name: ''
 };
 
+const safeParseJson = async (response) => {
+  try {
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return await response.json();
+    }
+
+    const text = await response.text();
+    const preview = text?.trim().slice(0, 200);
+    return {
+      error:
+        preview ||
+        `Received a non-JSON response (status ${response.status || 'unknown'}). Please verify the API server is running.`
+    };
+  } catch (_err) {
+    return { error: 'Failed to parse server response.' };
+  }
+};
+
 export default function App() {
   const [employee, setEmployee] = useState(initialForm);
   const [employees, setEmployees] = useState([]);
@@ -34,7 +53,7 @@ export default function App() {
 
     try {
       const response = await fetch(`${API_BASE}/api/employees`);
-      const data = await response.json();
+      const data = await safeParseJson(response);
 
       if (!response.ok) {
         throw new Error(data?.error || 'Unable to load employees right now.');
@@ -76,7 +95,7 @@ export default function App() {
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      const data = await safeParseJson(response);
 
       if (!response.ok) {
         throw new Error(data?.error || 'Unable to save employee right now.');
@@ -110,7 +129,7 @@ export default function App() {
         method: 'DELETE'
       });
 
-      const data = await response.json();
+      const data = await safeParseJson(response);
 
       if (!response.ok) {
         throw new Error(data?.error || 'Unable to delete employee right now.');
