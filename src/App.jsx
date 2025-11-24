@@ -34,7 +34,7 @@ export default function App() {
 
         <form className="form" onSubmit={handleSubmit}>
           <label className="field">
-            <span className="field__label">EMP NUM</span>
+            <span className="field__label">Emp Name</span>
             <input
               type="text"
               name="number"
@@ -47,7 +47,7 @@ export default function App() {
           </label>
 
           <label className="field">
-            <span className="field__label">Employee Numbers</span>
+            <span className="field__label">Emp Num</span>
             <input
               type="text"
               name="name"
@@ -74,11 +74,11 @@ export default function App() {
           {submitted ? (
             <dl>
               <div className="summary__row">
-                <dt>EMP NUM</dt>
+                <dt>Emp Name</dt>
                 <dd>{submitted.number}</dd>
               </div>
               <div className="summary__row">
-                <dt>Employee Numbers</dt>
+                <dt>Emp Num</dt>
                 <dd>{submitted.name}</dd>
               </div>
             </dl>
