@@ -27,8 +27,10 @@ To build for production, run `npm run build` and preview with `npm run preview`.
 
 ## Deploying to Vercel (with Neon)
 
+The Express API now runs as a Vercel Serverless Function via `api/[...path].js`, and the React app will call the same origin by default (no `VITE_API_URL` needed unless the API lives on a different domain).
+
 1) In Vercel Project Settings → Environment Variables, add  
    `DATABASE_URL=postgresql://neondb_owner:npg_CKSrbLR37aYp@ep-holy-glade-ad7opfuj-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require`  
    (use the `postgresql://` scheme, not `jdbc:`).  
-2) If your frontend is hosted separately, set `CLIENT_ORIGIN` to that URL (comma-separated list supported).  
-3) Redeploy. The server uses `DATABASE_URL` automatically.
+2) If your frontend is hosted on another domain, set `CLIENT_ORIGIN` to that URL (comma-separated list supported) and set `VITE_API_URL` to the API origin (including `https://`).  
+3) Redeploy. The server uses `DATABASE_URL` automatically and provisions the `employees` table on first request.

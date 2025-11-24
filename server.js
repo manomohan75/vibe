@@ -3,6 +3,8 @@ import cors from 'cors';
 import { Pool } from 'pg';
 
 const PORT = process.env.PORT || 4000;
+const isServerless = Boolean(process.env.VERCEL);
+
 const defaultOrigins = [
   'http://localhost:5173',
   'http://localhost:4173',
@@ -29,7 +31,8 @@ const normalizeOrigins = (raw) => {
 };
 
 const envOrigins = normalizeOrigins(process.env.CLIENT_ORIGIN);
-const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+const vercelOrigin = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins, vercelOrigin].filter(Boolean)));
 
 // Prefer explicit PGUSER, then the current OS user, finally postgres.
 const pgUser = process.env.PGUSER || process.env.USER || 'postgres';
@@ -66,6 +69,14 @@ const ensureTable = async () => {
   `);
   await pool.query('ALTER TABLE employees ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()');
   await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS employees_emp_number_key ON employees (emp_number)');
+};
+
+let ensureTablePromise;
+const ensureDatabaseReady = () => {
+  if (!ensureTablePromise) {
+    ensureTablePromise = ensureTable();
+  }
+  return ensureTablePromise;
 };
 
 const app = express();
@@ -215,7 +226,7 @@ app.delete('/api/employees/:number', async (req, res) => {
 
 const start = async () => {
   try {
-    await ensureTable();
+    await ensureDatabaseReady();
     app.listen(PORT, () => {
       console.log(`API running on http://localhost:${PORT}`);
     });
@@ -225,4 +236,19 @@ const start = async () => {
   }
 };
 
-start();
+export const handler = async (req, res) => {
+  try {
+    await ensureDatabaseReady();
+  } catch (error) {
+    console.error('Failed to prepare database', error);
+    return res.status(500).json({ error: 'API failed to initialize.' });
+  }
+
+  return app(req, res);
+};
+
+export default handler;
+
+if (!isServerless) {
+  start();
+}
