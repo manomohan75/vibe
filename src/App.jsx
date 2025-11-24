@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -9,9 +9,13 @@ const initialForm = {
 
 export default function App() {
   const [employee, setEmployee] = useState(initialForm);
+  const [employees, setEmployees] = useState([]);
   const [submitted, setSubmitted] = useState(null);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
+  const [listStatus, setListStatus] = useState('loading');
+  const [listError, setListError] = useState(null);
+  const [editingNumber, setEditingNumber] = useState(null);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -20,16 +24,52 @@ export default function App() {
     setEmployee((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setStatus('saving');
-    setError(null);
+  const loadEmployees = async () => {
+    setListStatus('loading');
+    setListError(null);
 
     try {
-      const response = await fetch(`${API_BASE}/api/employees`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE}/api/employees`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to load employees right now.');
+      }
+
+      setEmployees(data.employees || []);
+      setListStatus('success');
+    } catch (err) {
+      setListStatus('error');
+      setListError(err?.message || 'Unexpected error loading employees.');
+    }
+  };
+
+  useEffect(() => {
+    loadEmployees();
+  }, []);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const isEditing = Boolean(editingNumber);
+    setStatus(isEditing ? 'updating' : 'saving');
+    setError(null);
+
+    const payload = isEditing
+      ? {
+          name: employee.name,
+          newNumber: employee.number
+        }
+      : employee;
+
+    const endpoint = isEditing
+      ? `${API_BASE}/api/employees/${encodeURIComponent(editingNumber)}`
+      : `${API_BASE}/api/employees`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(employee)
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -39,7 +79,10 @@ export default function App() {
       }
 
       setSubmitted(data.employee);
+      setEmployee({ number: data.employee.number, name: data.employee.name });
+      setEditingNumber(isEditing ? data.employee.number : null);
       setStatus('success');
+      loadEmployees();
     } catch (err) {
       setSubmitted(null);
       setStatus('error');
@@ -71,7 +114,9 @@ export default function App() {
 
       setEmployee(initialForm);
       setSubmitted(null);
+      setEditingNumber(null);
       setStatus('deleted');
+      loadEmployees();
     } catch (err) {
       setStatus('error');
       setError(err?.message || 'Unexpected error occurred.');
@@ -83,6 +128,15 @@ export default function App() {
     setSubmitted(null);
     setStatus('idle');
     setError(null);
+    setEditingNumber(null);
+  };
+
+  const handleEditSelect = (emp) => {
+    setEmployee({ number: emp.number, name: emp.name });
+    setSubmitted(emp);
+    setEditingNumber(emp.number);
+    setStatus('idle');
+    setError(null);
   };
 
   return (
@@ -90,7 +144,10 @@ export default function App() {
       <main className="card">
         <header className="card__header">
           <h1>Employee Details</h1>
-          <p className="muted">Enter an employee number and name to preview the saved record.</p>
+          <p className="muted">
+            Enter an employee number and name to preview the saved record. Select an employee below to edit their
+            details.
+          </p>
         </header>
 
         <form className="form" onSubmit={handleSubmit}>
@@ -108,7 +165,7 @@ export default function App() {
           </label>
 
           <label className="field">
-            <span className="field__label">Emp Name</span>
+            <span className="field__label">Employee Name</span>
             <input
               type="text"
               name="name"
@@ -121,8 +178,12 @@ export default function App() {
           </label>
 
           <div className="actions">
-            <button type="submit" className="button" disabled={status === 'saving' || status === 'deleting'}>
-              {status === 'saving' ? 'Saving...' : 'Save'}
+            <button
+              type="submit"
+              className="button"
+              disabled={status === 'saving' || status === 'deleting' || status === 'updating'}
+            >
+              {status === 'saving' ? 'Saving...' : status === 'updating' ? 'Updating...' : editingNumber ? 'Update' : 'Save'}
             </button>
             <button
               type="button"
@@ -152,24 +213,79 @@ export default function App() {
                 <dd>{submitted.number}</dd>
               </div>
               <div className="summary__row">
-                <dt>Emp Name</dt>
+                <dt>Employee Name</dt>
                 <dd>{submitted.name}</dd>
               </div>
               <div className="summary__row">
                 <dt>Created</dt>
                 <dd>{new Date(submitted.createdAt).toLocaleString()}</dd>
               </div>
+              {submitted.updatedAt && (
+                <div className="summary__row">
+                  <dt>Updated</dt>
+                  <dd>{new Date(submitted.updatedAt).toLocaleString()}</dd>
+                </div>
+              )}
+              {editingNumber && (
+                <div className="summary__row">
+                  <dt>Editing</dt>
+                  <dd>{editingNumber}</dd>
+                </div>
+              )}
             </dl>
           ) : (
             <p className="muted">
               {status === 'saving'
                 ? 'Saving employee to the database...'
-                : status === 'deleting'
+                : status === 'updating'
+                  ? 'Updating employee...'
+                  : status === 'deleting'
                   ? 'Deleting employee...'
                   : status === 'deleted'
                     ? 'Employee deleted.'
                     : 'Submit the form to save the employee details to Postgres.'}
             </p>
+          )}
+        </section>
+
+        <section className="list" aria-live="polite">
+          <div className="list__header">
+            <div>
+              <h2>Employees</h2>
+              <p className="muted">Select a row to edit it.</p>
+            </div>
+            <button type="button" className="button button--ghost" onClick={loadEmployees} disabled={listStatus === 'loading'}>
+              {listStatus === 'loading' ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+
+          {listError && <p className="muted">Error: {listError}</p>}
+
+          {listStatus === 'loading' && <p className="muted">Loading employees...</p>}
+
+          {listStatus === 'success' && employees.length === 0 && <p className="muted">No employees saved yet.</p>}
+
+          {listStatus === 'success' && employees.length > 0 && (
+            <div className="table">
+              <div className="table__head">
+                <span>Emp #</span>
+                <span>Name</span>
+                <span>Created</span>
+                <span>Updated</span>
+                <span>Action</span>
+              </div>
+              <div className="table__body">
+                {employees.map((emp) => (
+                  <button key={emp.id} className="table__row" type="button" onClick={() => handleEditSelect(emp)}>
+                    <span>{emp.number}</span>
+                    <span>{emp.name}</span>
+                    <span>{new Date(emp.createdAt).toLocaleDateString()}</span>
+                    <span>{emp.updatedAt ? new Date(emp.updatedAt).toLocaleDateString() : '—'}</span>
+                    <span className="table__action">Edit</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </section>
       </main>

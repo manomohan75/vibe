@@ -12,6 +12,7 @@ This React single-page app lets you enter an employee number and name, saves the
    ```bash
    export PGPASSWORD=your_db_password
    ```
+   For hosted Postgres (e.g., Neon), set `DATABASE_URL` (or `NEON_DATABASE_URL`) to your connection string that includes `sslmode=require`. When this is present, the server will use it instead of the local defaults.
 3. Start the API (creates an `employees` table if missing):
    ```bash
    npm run server
