@@ -175,7 +175,7 @@ export default function App() {
 
         <form className="form" onSubmit={handleSubmit}>
           <label className="field">
-            <span className="field__label">Emp #</span>
+            <span className="field__label">Employee Number</span>
             <input
               type="text"
               name="number"
@@ -232,7 +232,7 @@ export default function App() {
                 <dd>{submitted.id}</dd>
               </div>
               <div className="summary__row">
-                <dt>Emp #</dt>
+                <dt>Employee Number</dt>
                 <dd>{submitted.number}</dd>
               </div>
               <div className="summary__row">
@@ -291,7 +291,7 @@ export default function App() {
           {listStatus === 'success' && employees.length > 0 && (
             <div className="table">
               <div className="table__head">
-                <span>Emp #</span>
+                <span>Employee Number</span>
                 <span>Name</span>
                 <span>Created</span>
                 <span>Updated</span>
