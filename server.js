@@ -9,30 +9,52 @@ const defaultOrigins = [
   'http://localhost:5173',
   'http://localhost:4173',
   'http://127.0.0.1:5173',
-  'http://127.0.0.1:4173'
+  'http://127.0.0.1:4173',
+  'https://localhost:5173',
+  'https://localhost:4173',
+  'https://127.0.0.1:5173',
+  'https://127.0.0.1:4173'
 ];
 
-const normalizeOrigins = (raw) => {
-  if (!raw) return [];
-
-  return raw
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean)
-    .map((origin) => {
-      try {
-        // Strips any path/query so accidental values like http://localhost:5173/index.html still work.
-        const parsed = new URL(origin);
-        return parsed.origin;
-      } catch (_err) {
-        return origin;
-      }
-    });
+const normalizeOrigin = (origin) => {
+  try {
+    const parsed = new URL(origin);
+    return parsed.origin;
+  } catch (_err) {
+    return origin;
+  }
 };
 
-const envOrigins = normalizeOrigins(process.env.CLIENT_ORIGIN);
+const normalizeOrigins = (...rawOrigins) => {
+  return rawOrigins
+    .flatMap((raw) => (raw ? String(raw) : ''))
+    .flatMap((raw) => raw.split(/[\s,]+/))
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+    .map(normalizeOrigin);
+};
+
+const envOrigins = normalizeOrigins(
+  process.env.CLIENT_ORIGIN,
+  process.env.CLIENT_ORIGINS,
+  process.env.ALLOWED_ORIGINS,
+  process.env.FRONTEND_ORIGIN,
+  process.env.FRONTEND_URL,
+  process.env.SITE_URL,
+  process.env.APP_URL,
+  process.env.URL,
+  process.env.NEXT_PUBLIC_SITE_URL
+);
 const vercelOrigin = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
-const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins, vercelOrigin].filter(Boolean)));
+const vercelBranchOrigin = process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : null;
+const nextPublicVercelOrigin = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : null;
+const allowedOrigins = Array.from(
+  new Set([
+    ...normalizeOrigins(...defaultOrigins),
+    ...envOrigins,
+    ...normalizeOrigins(vercelOrigin, vercelBranchOrigin, nextPublicVercelOrigin)
+  ].filter(Boolean))
+);
 
 // Prefer explicit PGUSER, then the current OS user, finally postgres.
 const pgUser = process.env.PGUSER || process.env.USER || 'postgres';
@@ -84,8 +106,9 @@ const app = express();
 app.use(
   cors({
     origin: (origin, callback) => {
-      const allow = !origin || allowedOrigins.includes(origin);
-      callback(allow ? null : new Error('Origin not allowed by CORS'), allow ? origin || true : undefined);
+      const normalizedOrigin = origin ? normalizeOrigin(origin) : origin;
+      const allow = !origin || allowedOrigins.includes(normalizedOrigin);
+      callback(allow ? null : new Error('Origin not allowed by CORS'), allow ? true : undefined);
     }
   })
 );
