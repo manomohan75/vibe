@@ -146,14 +146,6 @@ export default function App() {
     }
   };
 
-  const handleReset = () => {
-    setEmployee(initialForm);
-    setSubmitted(null);
-    setStatus('idle');
-    setError(null);
-    setEditingNumber(null);
-  };
-
   const handleEditSelect = (emp) => {
     setEmployee({ number: emp.number, name: emp.name });
     setSubmitted(emp);
@@ -215,9 +207,6 @@ export default function App() {
               disabled={status === 'saving' || status === 'deleting' || !employee.number}
             >
               {status === 'deleting' ? 'Deleting...' : 'Delete'}
-            </button>
-            <button type="button" className="button button--ghost" onClick={handleReset}>
-              Clear
             </button>
           </div>
         </form>

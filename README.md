@@ -8,11 +8,15 @@ This React single-page app lets you enter an employee number and name, saves the
    ```bash
    npm install
    ```
-2. Set a Postgres connection string via `DATABASE_URL` (or `NEON_DATABASE_URL`). For local Postgres, ensure it is running and set credentials as needed (defaults: host `localhost`, port `5432`, database `postgres`, user from `PGUSER`/current OS user, otherwise `postgres`). Supply `PGPASSWORD` if your Postgres setup requires a password for that user:
+2. Copy `.env.example` to `.env` and add your connection string. The server automatically loads this file in local/dev runs:
+   ```bash
+   cp .env.example .env
+   # inside .env, set DATABASE_URL (or NEON_DATABASE_URL) to your Neon string with sslmode=require
+   ```
+   For local Postgres, ensure it is running and set credentials as needed (defaults: host `localhost`, port `5432`, database `postgres`, user from `PGUSER`/current OS user, otherwise `postgres`). Supply `PGPASSWORD` if your Postgres setup requires a password for that user:
    ```bash
    export PGPASSWORD=your_db_password
    ```
-   For hosted Postgres (e.g., Neon), set `DATABASE_URL` (or `NEON_DATABASE_URL`) to your connection string that includes `sslmode=require`.
 3. Start the API (creates an `employees` table if missing):
    ```bash
    npm run server
@@ -33,4 +37,4 @@ The Express API now runs as a Vercel Serverless Function via `api/[...path].js`,
    `DATABASE_URL=postgresql://neondb_owner:npg_CKSrbLR37aYp@ep-holy-glade-ad7opfuj-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require`  
    (use the `postgresql://` scheme, not `jdbc:`).  
 2) If your frontend is hosted on another domain, set `CLIENT_ORIGIN` to that URL (comma-separated list supported) and set `VITE_API_URL` to the API origin (including `https://`).  
-3) Redeploy. The server uses `DATABASE_URL` automatically and provisions the `employees` table on first request.
+3) Redeploy. The server uses `DATABASE_URL` automatically and provisions the `employees` table on first request. You can reuse the exact same connection string in your local `.env` file to point the local dev server at Neon.
